@@ -43,8 +43,20 @@ function setup_flatpak() {
 
 function check_bios() {
   case "$1" in
+    'net.pcsx2.PCSX2')
+      local _biosdir="$emudata/pcsx2/bios"
+        for _file in scph10000.bin  scph39001.bin; do
+          if [ -f "$_biosdir/$_file" ]; then
+            echo "PCSX2 BIOS File: $_file : Present"
+          else
+            echo "PCSX2 BIOS File: $_file : Missing - Install with 'cp FILE $_biosdir/"
+          fi
+        done
+      ;;
+
     'org.duckstation.DuckStation')
-      local _biosdir="$HOME/.var/app/org.duckstation.DuckStation/config/duckstation/bios"
+      #local _biosdir="$HOME/.var/app/org.duckstation.DuckStation/config/duckstation/bios"
+      local _biosdir="$emudata/duckstation/bios"
       for _file in scph5500.bin scph5501.bin scph5502.bin scph5503.bin scph7003.bin; do
         if [ -f "$_biosdir/$_file" ]; then
           echo "DuckStation BIOS File: $_file : Present"
@@ -53,11 +65,53 @@ function check_bios() {
         fi
       done
       ;;
+
+    'net.kuribo64.melonDS')
+      local _biosdir="$emudata/melonds/bios"
+      for _file in bios9.bin bios7.bin firmware.bin; do
+        if [ -f "$_biosdir/$_file" ]; then
+          echo "melonDS BIOS File: $_file : Present"
+        else
+          echo "melonDS BIOS File: $_file : Missing - Insall with 'cp FILE $_biosdir'"
+        fi
+      done
+      :
+      ;;
   esac
 }
 
 function setup_emudata() {
   case "$1" in
+    'org.DolphinEmu.dolphin-emu')
+      local _emudata="$emudata/dolphin"
+      local _vardata="$HOME/.var/app/org.DolphinEmu.dolphin-emu/data/dolphin-emu"
+      safe_mkdir "$_emudata"
+      safe_mklnk "$_vardata/GBA/Saves" "$_emudata/gamecube-saves"
+      safe_mklnk "$_vardata/GBA" "$_emudata/bios"
+      ;;
+    
+    'net.pcsx2.PCSX2')
+      local _emudata="$emudata/pcsx2"
+      local _vardata="$HOME/.var/app/net.pcsx2.PCSX2/config/PCSX2"
+      safe_mkdir "$_emudata"
+      safe_mklnk "$_vardata/bios" "$_emudata/bios"
+      safe_mklnk "$_vardata/sstates" "$_emudata/states"
+      safe_mklnk "$_vardata/snaps" "$_emudata/screenshots"
+
+      check_bios "$1"
+      ;;
+
+    'net.kuribo64.melonDS')
+      local _emudata="$emudata/melonds"
+      # MelonDS is weird in that it by default saves stuff to the content directory
+      # so there's no linking to do as we just need to make sure the emudata folders
+      # exist for it to send saves to
+      safe_mkdir "$_emudata/saves"
+      safe_mkdir "$_emudata/states"
+      safe_mkdir "$_emudata/bios"
+      check_bios "$1"
+    ;;
+
     'org.duckstation.DuckStation')
       local _emudata="$emudata/duckstation"
       local _vardata="$HOME/.var/app/org.duckstation.DuckStation/config/duckstation/memcards"
@@ -134,6 +188,8 @@ function main() {
   # some emulators in a fully gamepad-centric way.  
   setup_flatpak 'RetroArch' 'org.libretro.RetroArch'
   setup_flatpak 'DuckStation' 'org.duckstation.DuckStation'
+  setup_flatpak 'melonDS' 'net.kuribo64.melonDS'
+  setup_flatpak 'PCSX2' 'net.pcsx2.PCSX2'
 }
 
 main "$@"
